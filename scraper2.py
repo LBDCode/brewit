@@ -2,7 +2,7 @@ import urllib.request, urllib.parse, urllib.error
 from bs4 import BeautifulSoup
 import ssl
 
-url = 'https://www.homebrewersassociation.org/homebrew-recipe/simplicity-quad/'
+url = 'https://www.homebrewersassociation.org/homebrew-recipe/double-black-imperial-black-ipa/'
 html = urllib.request.urlopen(url).read()
 soup = BeautifulSoup(html, 'html.parser')
 
@@ -46,14 +46,11 @@ for spec in specsBlock:
 
 
 
-# directionsBlock = recipe.find("div", {"itemprop":"recipeInstructions"})
-# directions = directionsBlock.find_all("p")
-
-# print("Yield: ", batch)
-# print("Specifications: ", og, fg, abv, ibu, srm)
-# print("Directions: ", directions)
+directionsBlock = recipe.find("div", {"itemprop":"recipeInstructions"})
+directions = directionsBlock.p.contents[0]
 
 
 print("This is the title: ", titleBlock)
+print("Directions: ", directions)
 # for i in ingredients:
 #     print(i)
