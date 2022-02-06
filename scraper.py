@@ -13,11 +13,11 @@ def scrapeSite(link):
 def scrapePageRecipes(page):
     html = urllib.request.urlopen(page).read()
     soup = BeautifulSoup(html, 'html.parser')
-    recipeBlock = soup.find('div', {"id": "recipe-list"})
+    recipeBlock = soup.find('div', {"class": "recipe-container"})
     tags = recipeBlock.find_all('a')
     for tag in tags:
         htag = tag.get('href', None)
-        if htag not in recipeURLs and 'page' not in htag:
+        if htag not in recipeURLs and 'homebrew-recipe' in htag:
             recipeURLs.append(htag)
     for item in recipeURLs:
         print(item)
