@@ -1,3 +1,4 @@
+from imp import is_builtin
 import urllib.request, urllib.parse, urllib.error
 from bs4 import BeautifulSoup
 import ssl
@@ -9,17 +10,11 @@ soup = BeautifulSoup(html, 'html.parser')
 recipe = soup.find("article", class_="recipes")
 recipeContents = recipe.contents
 
-# for item in recipeContents:
-#     print(item)
 
-#this has title and type
 titleBlock = recipe.find("h1").contents[0]
-
-# batch = recipe.find("strong")
 
 ingredientsAndSpecsBlock = recipe.find("div", class_="ingredients")
 ingredientsBlock = ingredientsAndSpecsBlock.children
-
 
 ingredientsBlock = ingredientsAndSpecsBlock.find_all("li")
 ingredients = []
@@ -45,12 +40,14 @@ for spec in specsBlock:
     specValues[s] = v
 
 
-
 directionsBlock = recipe.find("div", {"itemprop":"recipeInstructions"})
 directions = directionsBlock.p.contents[0]
 
+batchYield = specValues["Yield"]
+og = specValues["Original Gravity"]
+fg = specValues["Final Gravity"]
+abc = specValues["ABV"]
+ibu = specValues["IBU"]
+srm = specValues["SRM"]
 
-print("This is the title: ", titleBlock)
-print("Directions: ", directions)
-# for i in ingredients:
-#     print(i)
+
