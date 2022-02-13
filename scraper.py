@@ -15,7 +15,8 @@ recipeURLs = []
 url = "https://www.homebrewersassociation.org/homebrew-recipes/page/"
 
 def scrapeSite(link):
-    for x in range(2, 84):
+    for x in range(11, 108):
+        print("page " + str(x))
         newURL = f'{url}{x}/'
         scrapePageRecipes(newURL)
 
@@ -32,58 +33,73 @@ def scrapePageRecipes(page):
         parseRecipePage(item)
     print (len(recipeURLs))
 
-scrapeSite(url)
-
 
 def parseRecipePage(url):
-
     html = urllib.request.urlopen(url).read()
     soup = BeautifulSoup(html, 'html.parser')
 
     recipe = soup.find("article", class_="recipes")
-    recipeContents = recipe.contents
-
 
     titleBlock = recipe.find("h1").contents[0]
 
     ingredientsAndSpecsBlock = recipe.find("div", class_="ingredients")
-    ingredientsBlock = ingredientsAndSpecsBlock.children
+    
+    if ingredientsAndSpecsBlock:
+        ingredientsBlock = ingredientsAndSpecsBlock.children
 
-    ingredientsBlock = ingredientsAndSpecsBlock.find_all("li")
-    ingredients = []
+        ingredientsBlock = ingredientsAndSpecsBlock.find_all("li")
+        ingredients = []
 
-    for i in ingredientsBlock:
-        if not i.strong:
-            ingredients.append(i.contents[0])
-
-
-    specsBlock = ingredientsAndSpecsBlock.find_all("p")
-    specValues = {
-        "Yield": "",
-        "Original Gravity": "",
-        "Final Gravity": "",
-        "ABV": "",
-        "IBU": "",
-        "SRM": ""
-    }
-
-    for spec in specsBlock:
-        s = spec.contents[0].string.split(':')[0]
-        v = spec.contents[1]
-        specValues[s] = v
+        for i in ingredientsBlock:
+            if not i.strong and i.contents:
+                ingredients.append(i.contents[0])
 
 
-    directionsBlock = recipe.find("div", {"itemprop":"recipeInstructions"})
-    directions = directionsBlock.p.contents[0]
+        specsBlock = ingredientsAndSpecsBlock.find_all("p")
+        specValues = {
+            "Yield": "",
+            "Original Gravity": "",
+            "Final Gravity": "",
+            "ABV": "",
+            "IBU": "",
+            "SRM": ""
+        }
 
-    batchYield = specValues["Yield"]
-    og = specValues["Original Gravity"]
-    fg = specValues["Final Gravity"]
-    abv = specValues["ABV"]
-    ibu = specValues["IBU"]
-    srm = specValues["SRM"]
+        for spec in specsBlock:
+            specString = str(spec.text)
+            specText = specString.split(": ")
+            s = specText[0]
+            v = specText[1]
+            specValues[s] = v
 
-    sql = """INSERT INTO recipes(title, original_gravity, final_gravity, abv, ibu, srm, ingredients, yield, directions)
-             VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s) ;"""
 
-    cursor.execute(sql, (titleBlock, og, fg, abv, ibu, srm, ingredients,))
+        directionsBlock = recipe.find("div", {"itemprop":"recipeInstructions"})
+        directions = directionsBlock.p.contents[0] if directionsBlock.p and directionsBlock.p.contents else ""
+
+        batchYield = specValues["Yield"] if specValues["Yield"] else ""
+        og = specValues["Original Gravity"] if specValues["Original Gravity"] else ""
+        fg = specValues["Final Gravity"] if specValues["Final Gravity"] else ""
+        abv = specValues["ABV"] if specValues["ABV"] else ""
+        ibu = specValues["IBU"] if specValues["IBU"] else ""
+        srm = specValues["SRM"] if specValues["SRM"] else ""
+
+        sql = """INSERT INTO recipes(title, original_gravity, final_gravity, abv, ibu, srm, yield, directions)
+                VALUES(%s, %s, %s, %s, %s, %s, %s, %s) RETURNING recipe_id;"""
+
+        cursor.execute(sql, (titleBlock, og, fg, abv, ibu, srm, batchYield, directions,))
+        id_of_new_recipe = cursor.fetchone()[0]
+
+        ingredientSQL = """INSERT INTO ingredients(recipe_id, ingredient )
+                VALUES(%s, %s); """
+
+        for ingredient in ingredients:
+            cursor.execute(ingredientSQL, (id_of_new_recipe, str(ingredient)))
+
+        conn.commit()
+
+    
+
+
+scrapeSite(url)
+
+
