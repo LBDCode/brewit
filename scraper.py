@@ -15,7 +15,7 @@ recipeURLs = []
 url = "https://www.homebrewersassociation.org/homebrew-recipes/page/"
 
 def scrapeSite(link):
-    for x in range(11, 108):
+    for x in range(38, 108):
         print("page " + str(x))
         newURL = f'{url}{x}/'
         scrapePageRecipes(newURL)
@@ -30,7 +30,10 @@ def scrapePageRecipes(page):
         if htag not in recipeURLs and 'homebrew-recipe' in htag:
             recipeURLs.append(htag)
     for item in recipeURLs:
-        parseRecipePage(item)
+        try:
+            parseRecipePage(item)
+        except:
+            print("errr:", item)
     print (len(recipeURLs))
 
 
@@ -45,59 +48,63 @@ def parseRecipePage(url):
     ingredientsAndSpecsBlock = recipe.find("div", class_="ingredients")
     
     if ingredientsAndSpecsBlock:
-        ingredientsBlock = ingredientsAndSpecsBlock.children
 
-        ingredientsBlock = ingredientsAndSpecsBlock.find_all("li")
-        ingredients = []
+        try:
 
-        for i in ingredientsBlock:
-            if not i.strong and i.contents:
-                ingredients.append(i.contents[0])
+            ingredientsBlock = ingredientsAndSpecsBlock.children
 
+            ingredientsBlock = ingredientsAndSpecsBlock.find_all("li")
+            ingredients = []
 
-        specsBlock = ingredientsAndSpecsBlock.find_all("p")
-        specValues = {
-            "Yield": "",
-            "Original Gravity": "",
-            "Final Gravity": "",
-            "ABV": "",
-            "IBU": "",
-            "SRM": ""
-        }
-
-        for spec in specsBlock:
-            specString = str(spec.text)
-            specText = specString.split(": ")
-            s = specText[0]
-            v = specText[1]
-            specValues[s] = v
+            for i in ingredientsBlock:
+                if not i.strong and i.contents:
+                    ingredients.append(i.contents[0])
 
 
-        directionsBlock = recipe.find("div", {"itemprop":"recipeInstructions"})
-        directions = directionsBlock.p.contents[0] if directionsBlock.p and directionsBlock.p.contents else ""
+            specsBlock = ingredientsAndSpecsBlock.find_all("p")
+            specValues = {
+                "Yield": "",
+                "Original Gravity": "",
+                "Final Gravity": "",
+                "ABV": "",
+                "IBU": "",
+                "SRM": ""
+            }
 
-        batchYield = specValues["Yield"] if specValues["Yield"] else ""
-        og = specValues["Original Gravity"] if specValues["Original Gravity"] else ""
-        fg = specValues["Final Gravity"] if specValues["Final Gravity"] else ""
-        abv = specValues["ABV"] if specValues["ABV"] else ""
-        ibu = specValues["IBU"] if specValues["IBU"] else ""
-        srm = specValues["SRM"] if specValues["SRM"] else ""
+            for spec in specsBlock:
+                specString = str(spec.text)
+                specText = specString.split(": ")
+                s = specText[0]
+                v = specText[1]
+                specValues[s] = v
 
-        sql = """INSERT INTO recipes(title, original_gravity, final_gravity, abv, ibu, srm, yield, directions)
-                VALUES(%s, %s, %s, %s, %s, %s, %s, %s) RETURNING recipe_id;"""
 
-        cursor.execute(sql, (titleBlock, og, fg, abv, ibu, srm, batchYield, directions,))
-        id_of_new_recipe = cursor.fetchone()[0]
+            directionsBlock = recipe.find("div", {"itemprop":"recipeInstructions"})
+            directions = directionsBlock.p.contents[0] if directionsBlock.p and directionsBlock.p.contents else ""
 
-        ingredientSQL = """INSERT INTO ingredients(recipe_id, ingredient )
-                VALUES(%s, %s); """
+            batchYield = specValues["Yield"] if specValues["Yield"] else ""
+            og = specValues["Original Gravity"] if specValues["Original Gravity"] else ""
+            fg = specValues["Final Gravity"] if specValues["Final Gravity"] else ""
+            abv = specValues["ABV"] if specValues["ABV"] else ""
+            ibu = specValues["IBU"] if specValues["IBU"] else ""
+            srm = specValues["SRM"] if specValues["SRM"] else ""
 
-        for ingredient in ingredients:
-            cursor.execute(ingredientSQL, (id_of_new_recipe, str(ingredient)))
+            sql = """INSERT INTO recipes(title, original_gravity, final_gravity, abv, ibu, srm, yield, directions)
+                    VALUES(%s, %s, %s, %s, %s, %s, %s, %s) RETURNING recipe_id;"""
 
-        conn.commit()
+            cursor.execute(sql, (titleBlock, og, fg, abv, ibu, srm, batchYield, directions,))
+            id_of_new_recipe = cursor.fetchone()[0]
 
-    
+            ingredientSQL = """INSERT INTO ingredients(recipe_id, ingredient )
+                    VALUES(%s, %s); """
+
+            for ingredient in ingredients:
+                cursor.execute(ingredientSQL, (id_of_new_recipe, str(ingredient)))
+
+            conn.commit()
+
+        except:
+            print("error: ", titleBlock, og, fg, abv, ibu, srm, batchYield, directions)
 
 
 scrapeSite(url)
