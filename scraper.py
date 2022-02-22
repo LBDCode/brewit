@@ -5,7 +5,7 @@ import psycopg2
 
 #establishing the connection
 conn = psycopg2.connect(
-   database="", user='postgres', password='', host='127.0.0.1', port= '5432'
+   database='', user='postgres', password='', host='127.0.0.1', port= '5432'
 )
 #Creating a cursor object using the cursor() method
 cursor = conn.cursor()
@@ -15,7 +15,7 @@ recipeURLs = []
 url = "https://www.homebrewersassociation.org/homebrew-recipes/page/"
 
 def scrapeSite(link):
-    for x in range(38, 108):
+    for x in range(61, 70):
         print("page " + str(x))
         newURL = f'{url}{x}/'
         scrapePageRecipes(newURL)
@@ -44,6 +44,10 @@ def parseRecipePage(url):
     recipe = soup.find("article", class_="recipes")
 
     titleBlock = recipe.find("h1").contents[0]
+
+    styleDiv = recipe.find("a", itemprop="recipeCuisine")
+
+    style = styleDiv.text
 
     ingredientsAndSpecsBlock = recipe.find("div", class_="ingredients")
     
@@ -89,10 +93,10 @@ def parseRecipePage(url):
             ibu = specValues["IBU"] if specValues["IBU"] else ""
             srm = specValues["SRM"] if specValues["SRM"] else ""
 
-            sql = """INSERT INTO recipes(title, original_gravity, final_gravity, abv, ibu, srm, yield, directions)
-                    VALUES(%s, %s, %s, %s, %s, %s, %s, %s) RETURNING recipe_id;"""
+            sql = """INSERT INTO recipes(title, style, original_gravity, final_gravity, abv, ibu, srm, yield, directions)
+                    VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING recipe_id;"""
 
-            cursor.execute(sql, (titleBlock, og, fg, abv, ibu, srm, batchYield, directions,))
+            cursor.execute(sql, (titleBlock, style, og, fg, abv, ibu, srm, batchYield, directions,))
             id_of_new_recipe = cursor.fetchone()[0]
 
             ingredientSQL = """INSERT INTO ingredients(recipe_id, ingredient )

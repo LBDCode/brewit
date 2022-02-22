@@ -4,12 +4,7 @@ from bs4 import BeautifulSoup
 import ssl
 import psycopg2
 
-#establishing the connection
-conn = psycopg2.connect(
-   database="", user='postgres', password='', host='127.0.0.1', port= '5432'
-)
-#Creating a cursor object using the cursor() method
-cursor = conn.cursor()
+
 
 url = 'https://www.homebrewersassociation.org/homebrew-recipe/double-black-imperial-black-ipa/'
 html = urllib.request.urlopen(url).read()
@@ -20,6 +15,10 @@ recipeContents = recipe.contents
 
 
 titleBlock = recipe.find("h1").contents[0]
+
+styleDiv = recipe.find("a", itemprop="recipeCuisine")
+
+style = styleDiv.text
 
 ingredientsAndSpecsBlock = recipe.find("div", class_="ingredients")
 ingredientsBlock = ingredientsAndSpecsBlock.children
